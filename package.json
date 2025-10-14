@@ -1,0 +1,36 @@
+{
+  "name": "customer-behavior-mining-system",
+  "version": "1.0.0",
+  "description": "Full-stack web application for analyzing customer behavior data",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "setup-db": "node scripts/setup_database.js",
+    "setup-happiness-db": "node scripts/setup_happiness_database.js",
+    "import-data": "node scripts/import_data.js import",
+    "import-happiness": "node scripts/import_happiness_data.js import",
+    "data-summary": "node scripts/import_data.js summary",
+    "happiness-summary": "node scripts/import_happiness_data.js summary",
+    "start": "cd server && npm start"
+  },
+  "keywords": [
+    "customer-behavior",
+    "analytics",
+    "machine-learning",
+    "dashboard"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "csv-parser": "^3.2.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
+    "dotenv": "^17.2.3"
+  }
+}
