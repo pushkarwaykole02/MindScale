@@ -30,10 +30,12 @@ app.use('/api/', limiter)
 // Import routes
 const predictionRoutes = require('./routes/predictions')
 const happinessRoutes = require('./routes/happiness')
+const { router: aiSuggestionRoutes } = require('./routes/ai-suggestions')
 
 // Routes
 app.use('/api/predict', predictionRoutes)
 app.use('/api/happiness', happinessRoutes)
+app.use('/api/ai-suggestions', aiSuggestionRoutes)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -62,4 +64,6 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`📊 Customer Behavior Mining System API`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
+  console.log(`🤖 AI Provider: ${process.env.GEMINI_API_KEY ? 'Google Gemini' : 'Fallback'}`)
+  console.log(`✅ AI Integration: READY`)
 })

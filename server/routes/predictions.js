@@ -80,119 +80,14 @@ const simulateNaiveBayes = (userData) => {
   }
 }
 
-const generateRecommendations = (category, probability, issueText) => {
-  // Large suggestion library (>=50)
-  const LIB = {
-    general: [
-      '5-minute body scan once daily',
-      'Practice 3 good things before bed',
-      'Write a 1-line journal entry nightly',
-      'Step outside for 10 minutes of daylight before noon',
-      'Drink a glass of water on waking',
-      'Set a 2-minute tidy-up timer after dinner',
-      'Listen to calming music for 10 minutes',
-      'Schedule a micro-break every 60 minutes',
-      'Do a random act of kindness this week',
-      'Text a friend to check in today',
-      'Stand and stretch every hour',
-      'Eat a piece of fruit today',
-      'Limit news/social scrolling to 20 minutes',
-      'Plan tomorrow with 3 bullet points',
-      'Practice box breathing 4-4-4-4 for 3 minutes',
-      'Name 5 things you can see/hear/feel (grounding)',
-      'Progressive muscle relaxation (5 minutes)',
-      'Take a warm shower before bed',
-      'Use blue-light filter after sunset',
-      'Prepare clothes/desk the night before',
-      'Keep a consistent wake time all week',
-      'Set phone to Do Not Disturb for 30 minutes',
-      'Walk while taking a call',
-      'Practice self-compassion: speak kindly to yourself',
-      'Limit caffeine after 2PM',
-      'Write down intrusive thoughts and postpone them',
-      'Plan a small reward after a task',
-      'Tidy one surface (desk/nightstand)',
-      'Spend 10 minutes on a hobby',
-      'Read 5 pages of a book',
-      'Cook a simple balanced meal',
-      'Stand in sunlight for 5 minutes',
-      'Do 10 slow deep breaths',
-      'Set a realistic bedtime window',
-      'Practice gratitude with a partner/friend',
-      'Set boundaries: say no once this week',
-      'Write a worry list then set a “worry time” later',
-      'Practice mindful eating for one meal',
-      'Lower evening lights 1 hour before bed',
-      'Create a calm corner (chair + lamp)',
-      'Unfollow one stressful feed',
-      'Use a paper to‑do list tomorrow',
-      'Schedule a nature walk this week',
-      'Do a digital reset: close unused tabs/apps',
-      'Light stretching before bed',
-      'Set a hydration target: 6–8 glasses',
-      'Add a vegetable to lunch/dinner',
-      'Do one 2-minute meditation today',
-      'Practice the 5-4-3-2-1 grounding',
-      'Write a kind note to yourself'
-    ],
-    anxiety: [
-      '4-7-8 breathing twice daily',
-      '10-minute mindfulness session',
-      'Label emotion + cause (name it to tame it)',
-      'Reduce stimulants (caffeine/energy drinks)'
-    ],
-    sleep: [
-      'Avoid screens 60 minutes before bed',
-      'Keep consistent sleep/wake times',
-      'Avoid caffeine after 2PM',
-      'Reserve bed for sleep only'
-    ],
-    activity: [
-      '20–30 minutes brisk walk daily',
-      'Light yoga or stretching (10 minutes)',
-      'Take stairs when possible',
-      '2×5 push-ups/squats throughout the day'
-    ],
-    mood: [
-      'CBT thought record once a day',
-      'Gratitude journaling (3 items)',
-      'Plan one enjoyable activity (behavioral activation)',
-      'Call or meet a supportive friend'
-    ],
-    focus: [
-      'Use Pomodoro 25/5 for one session',
-      'Declutter your desk for 5 minutes',
-      'Silence notifications during tasks',
-      'Single-task: finish one small task fully'
-    ]
-  }
-
-  // Build candidate pool based on inputs
-  const i = (issueText || '').toLowerCase()
-  let pool = [...LIB.general]
-  if (i.includes('anxiety')) pool = pool.concat(LIB.anxiety)
-  if (i.includes('sleep')) pool = pool.concat(LIB.sleep)
-  if (i.includes('stress')) pool = pool.concat(LIB.anxiety)
-  if (i.includes('focus') || i.includes('adhd')) pool = pool.concat(LIB.focus)
-
-  // Probability ~ risk. High risk → more structured actions; low risk → lighter habits
-  if (probability >= 0.6) pool = pool.concat(LIB.activity, LIB.mood)
-  else pool = pool.concat(LIB.sleep, LIB.mood)
-
-  // Deduplicate
-  const dedup = Array.from(new Set(pool))
-
-  // Pick 4 suggestions deterministically influenced by probability
-  const count = 4
-  const selected = []
-  let seed = Math.floor(probability * 1000)
-  for (let n = 0; n < count && dedup.length > 0; n++) {
-    seed = (seed * 9301 + 49297) % 233280
-    const idx = seed % dedup.length
-    selected.push(dedup.splice(idx, 1)[0])
-  }
-
-  return selected
+// Fallback suggestions (simplified)
+const generateRecommendations = () => {
+  return [
+    'Practice 5-minute deep breathing exercises twice daily',
+    'Take a 10-minute walk outside for natural light exposure',
+    'Write down 3 things you\'re grateful for before bed',
+    'Set a consistent sleep schedule and stick to it'
+  ]
 }
 
 const predictNextPurchase = (lastPurchaseDays, frequency) => {
@@ -254,9 +149,21 @@ router.post('/', async (req, res) => {
       insights.opportunities.push('High engagement - good candidate for loyalty programs')
     }
     
-    // AI-like selection: choose 4 suggestions from large library based on inputs
+    // Use AI-generated suggestions if available, otherwise fallback to hardcoded
     const issue = (userData.issue || '').toLowerCase()
-    const suggestions = generateRecommendations(userData.preferredCategory, (prediction.probability/100), issue)
+    let suggestions
+    
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const { generateAISuggestions } = require('./ai-suggestions')
+        suggestions = await generateAISuggestions(userData, issue)
+      } catch (error) {
+        console.error('AI suggestions failed, using fallback:', error)
+        suggestions = generateRecommendations()
+      }
+    } else {
+      suggestions = generateRecommendations(userData.preferredCategory, (prediction.probability/100), issue)
+    }
 
     const responsePayload = {
       ...prediction,
