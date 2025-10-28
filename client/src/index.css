@@ -1,3 +1,23 @@
+  /* Improve PDF capture text contrast and alignment */
+  .pdf-capture h1, .pdf-capture h2, .pdf-capture h3, .pdf-capture h4 { color: #111827 !important; }
+  .pdf-capture p, .pdf-capture span, .pdf-capture li { color: #1F2937 !important; }
+  .pdf-capture .flex.items-center.justify-between { align-items: center; }
+  .pdf-capture .card .p-3 { padding: 12px !important; }
+  .pdf-capture .card { background-color:#FFFFFF !important; border:1px solid #E5E7EB !important; box-shadow:none !important; }
+  .pdf-capture .bg-gray-50 { background-color:#FFFFFF !important; }
+  .pdf-capture .bg-gray-100 { background-color:#FFFFFF !important; }
+  .pdf-capture .bg-gray-700 { background-color:#FFFFFF !important; }
+  .pdf-capture .bg-gray-800 { background-color:#FFFFFF !important; }
+  .pdf-capture .dark\:bg-gray-700 { background-color:#FFFFFF !important; }
+  .pdf-capture .dark\:bg-gray-800 { background-color:#FFFFFF !important; }
+  .pdf-capture .text-white, .pdf-capture .dark\:text-white { color:#111827 !important; }
+  .pdf-capture .text-gray-300, .pdf-capture .text-gray-400, .pdf-capture .text-gray-500 { color:#374151 !important; }
+  .pdf-capture select.input-field, .pdf-capture .input-field { background-color:#FFFFFF !important; color:#111827 !important; border-color:#E5E7EB !important; }
+  .pdf-capture .rounded-lg.bg-gray-50, .pdf-capture .rounded-lg.dark\:bg-gray-700 { background-color:#F3F4F6 !important; border:1px solid #E5E7EB !important; }
+  .pdf-capture .badge { background-color:#EEF2FF !important; color:#1E3A8A !important; border-color:#C7D2FE !important; }
+  /* tighter vertical rhythm for lists in print */
+  .pdf-capture .space-y-4 > * + * { margin-top: 0.5rem !important; }
+  .pdf-capture .space-y-3 > * + * { margin-top: 0.5rem !important; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,18 +38,87 @@
   }
   
   .card {
-    @apply bg-gradient-to-br from-gray-800/60 to-gray-800/30 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg p-6 border border-gray-700/60 backdrop-blur-sm;
+    @apply rounded-xl shadow-lg p-6 backdrop-blur-sm
+      bg-gradient-to-br from-white to-gray-50 border border-gray-200
+      dark:from-gray-800/80 dark:to-gray-700/60 dark:border-gray-700/60;
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white bg-gray-800/40 placeholder-gray-400;
+    @apply w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500
+      bg-white text-gray-900 placeholder-gray-500 border border-gray-300
+      dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-600/10 text-primary-400 border border-primary-600/20;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      bg-primary-50 text-primary-700 border border-primary-200
+      dark:bg-primary-600/10 dark:text-primary-300 dark:border-primary-600/20;
   }
 
   .list-tile {
-    @apply flex items-center justify-between p-3 rounded-lg bg-gray-700/40 hover:bg-gray-700/60 transition-colors;
+    @apply flex items-center justify-between p-3 rounded-lg transition-colors
+      bg-gray-50 hover:bg-gray-100 border border-gray-200
+      dark:bg-gray-700/40 dark:hover:bg-gray-700/60 dark:border-gray-700/50;
+  }
+
+  /* Print-optimized report styles (force light look for PDFs) */
+  .report-container {
+    @apply bg-white text-gray-900 rounded-xl border border-gray-200 p-6 relative overflow-hidden;
+  }
+  .pdf-capture .card { @apply bg-white border border-gray-200; }
+  .pdf-capture .text-gray-900 { color: #111827 !important; }
+  .pdf-capture .text-gray-800 { color: #1F2937 !important; }
+  .pdf-capture .text-gray-700 { color: #374151 !important; }
+  .pdf-capture .text-gray-600 { color: #4B5563 !important; }
+  .pdf-capture .dark\:text-white { color: #111827 !important; }
+  .pdf-capture .dark\:bg-gray-700 { background-color: #F9FAFB !important; }
+  .pdf-capture .dark\:bg-gray-800 { background-color: #FFFFFF !important; }
+  .report-header {
+    @apply flex items-center justify-between border-b border-gray-200 pb-4 mb-6;
+  }
+  .report-stamp {
+    @apply absolute select-none pointer-events-none; /* non-interactive watermark */
+    right: 1rem;
+    bottom: 1rem;
+    transform: rotate(45deg);
+    opacity: 0.35; /* more visible watermark */
+    width: 260px;
+    height: auto;
+    z-index: 0;
+  }
+  .report-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+  .report-meta {
+    @apply text-sm text-gray-500;
+  }
+  .report-section {
+    @apply mb-6;
+  }
+  .report-section h5 {
+    @apply text-lg font-semibold text-gray-800 mb-2;
+  }
+  .report-kv {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-1 text-sm;
+  }
+  .report-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200;
+  }
+
+  .report-list {
+    @apply list-none text-[0.95rem] leading-7;
+    counter-reset: item;
+  }
+  .report-list li {
+    @apply mb-1;
+    display: grid;
+    grid-template-columns: 2rem 1fr; /* fixed width column for numbers to align text */
+    column-gap: 0.5rem;
+    align-items: start;
+  }
+  .report-list li::before {
+    counter-increment: item;
+    content: counter(item) ".";
+    @apply text-gray-400 font-medium text-base text-right;
   }
 }

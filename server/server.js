@@ -31,11 +31,13 @@ app.use('/api/', limiter)
 const predictionRoutes = require('./routes/predictions')
 const happinessRoutes = require('./routes/happiness')
 const { router: aiSuggestionRoutes } = require('./routes/ai-suggestions')
+const miningRoutes = require('./routes/mining')
 
 // Routes
 app.use('/api/predict', predictionRoutes)
 app.use('/api/happiness', happinessRoutes)
 app.use('/api/ai-suggestions', aiSuggestionRoutes)
+app.use('/api/mining', miningRoutes)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

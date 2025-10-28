@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import PredictionForm from '../components/Forms/PredictionForm'
 import BarChart from '../components/Charts/BarChart'
+import ReportDownloader from '../components/ReportDownloader'
 import { 
   User, 
   Target, 
@@ -122,15 +123,20 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div id="report-user-dashboard" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            My Well-being Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Your personalized well-being insights and comparisons with global data
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                My Well-being Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Your personalized well-being insights and comparisons with global data
+              </p>
+            </div>
+            {/* Removed page-level download from My Dashboard per feedback */}
+          </div>
         </div>
 
         {/* User Info Card */}

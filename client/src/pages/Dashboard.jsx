@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
 import LineChart from '../components/Charts/LineChart'
 import BarChart from '../components/Charts/BarChart'
 import DoughnutChart from '../components/Charts/DoughnutChart'
+import ReportDownloader from '../components/ReportDownloader'
+import PrintReport from '../components/PrintReport'
 import { 
   TrendingUp, 
   Users, 
-  DollarSign, 
-  ShoppingCart,
   Activity,
   Target
 } from 'lucide-react'
 
 const Dashboard = () => {
-  const { user } = useAuth()
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [regionYear, setRegionYear] = useState(null)
@@ -21,6 +19,9 @@ const Dashboard = () => {
   const [selectedCountry, setSelectedCountry] = useState('')
   const [countryData, setCountryData] = useState(null)
   const [allCountries, setAllCountries] = useState([])
+  const [kMeansClusters, setKMeansClusters] = useState([])
+  const [kMeansK, setKMeansK] = useState(5)
+  const [kMeansBuilding, setKMeansBuilding] = useState(false)
 
   useEffect(() => {
     fetchAnalytics()
@@ -41,10 +42,25 @@ const Dashboard = () => {
       setRegionYear(regions.year)
       setClusterYear(clusters.year)
       setAllCountries(countries)
+      try {
+        const km = await fetch('/api/happiness/clusters')
+        const kmData = await km.json()
+        setKMeansClusters(kmData.clusters || [])
+      } catch (_) {}
     } catch (error) {
       console.error('Error fetching analytics:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const formatCentroid = (centroid) => {
+    try {
+      const obj = typeof centroid === 'string' ? JSON.parse(centroid) : centroid
+      if (!obj) return ''
+      return 'centroid: ' + Object.entries(obj).map(([k, v]) => `${k}:${v}`).join(', ')
+    } catch (e) {
+      return ''
     }
   }
 
@@ -183,15 +199,20 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div id="report-dashboard" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            World Happiness & Mental Health Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Global well-being metrics, regional insights, and clusters from the World Happiness Report
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                World Happiness & Mental Health Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Global well-being metrics, regional insights, and clusters from the World Happiness Report
+              </p>
+            </div>
+            <ReportDownloader targetId="report-dashboard" fileName={`MindScale-Global-Report-${analytics?.overview?.latestYear || ''}.pdf`} title="MindScale Global Analysis" label="Download Analysis" pageBreakSelector="#kmeans-section" />
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -349,6 +370,76 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        {/* K-means section */}
+        <div id="kmeans-section" className="grid grid-cols-1 lg:grid-cols-1 gap-8 mt-8">
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">K‑means Clusters</h3>
+              <div className="flex items-center gap-2">
+                <select className="input-field w-auto" value={kMeansK} onChange={(e)=>setKMeansK(Number(e.target.value))}>
+                  {[3,4,5,6,7,8].map(v => <option key={v} value={v}>{v} clusters</option>)}
+                </select>
+                <button
+                  className={`btn-secondary ${kMeansBuilding ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  disabled={kMeansBuilding}
+                  onClick={async ()=>{
+                    try {
+                      setKMeansBuilding(true)
+                      const y = clusterYear || analytics?.overview?.latestYear
+                      await fetch('/api/mining/kmeans', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ year: Number(y), k: Number(kMeansK) })
+                      })
+                      const km = await fetch('/api/happiness/clusters')
+                      const kmData = await km.json()
+                      setKMeansClusters(kmData.clusters || [])
+                    } catch (err) {
+                      console.error('kmeans rebuild failed', err)
+                    } finally {
+                      setKMeansBuilding(false)
+                    }
+                  }}
+                >
+                  {kMeansBuilding ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-600 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-600"></span>
+                      </span>
+                      Rebuilding…
+                    </span>
+                  ) : (
+                    'Rebuild K‑means'
+                  )}
+                </button>
+              </div>
+            </div>
+            {kMeansClusters && kMeansClusters.length ? (
+              <div className="space-y-3">
+                {kMeansClusters.map((c) => {
+                  return (
+                    <div key={c.cluster_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">{c.cluster_name}</div>
+                        <div className="text-xs text-gray-500">{c.size} countries</div>
+                      </div>
+                      <div className="text-xs text-gray-500 max-w-md truncate">
+                        {formatCentroid(c.centroid_data)}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-300">No clusters yet. Choose K and click Rebuild K‑means.</p>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Hidden print report for high-quality PDF */}
+      <div style={{ position: 'absolute', left: -99999, top: 0 }}>
+        <PrintReport analytics={analytics} segmentData={segmentData} regionData={regionData} kMeansClusters={kMeansClusters} />
       </div>
     </div>
   )

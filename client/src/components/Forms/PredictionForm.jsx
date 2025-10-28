@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Brain, TrendingUp, Users, ShoppingCart } from 'lucide-react'
+import { Brain, TrendingUp, Users, ShoppingCart, Clock } from 'lucide-react'
 import BarChart from '../Charts/BarChart'
 import { useAuth } from '../../contexts/AuthContext'
+import ReportDownloader from '../ReportDownloader'
 
 const PredictionForm = ({ onSubmit }) => {
   const { user } = useAuth()
@@ -66,6 +67,15 @@ const PredictionForm = ({ onSubmit }) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const computeNextCheckIn = (risk) => {
+    if (!risk || risk === 0) return 'No data'
+    if (risk >= 80) return 'Within 1 day'
+    if (risk >= 60) return 'Within 2 days'
+    if (risk >= 40) return 'Within 3 days'
+    if (risk >= 20) return 'Within 1 week'
+    return 'Within 2 weeks'
   }
 
   return (
@@ -209,42 +219,121 @@ const PredictionForm = ({ onSubmit }) => {
       </form>
 
       {result && (
-        <div className="mt-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-          <h4 className="font-semibold text-primary-900 dark:text-primary-100 mb-2">
-            Prediction Results
-          </h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-primary-600" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Profile:</strong> {result.segment}
-              </span>
+        <>
+          {/* On-screen summary (kept concise) */}
+          <div className="mt-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+            <div className="flex items-start justify-between mb-2">
+              <h4 className="font-semibold text-primary-900 dark:text-primary-100">
+                Prediction Results
+              </h4>
+              <ReportDownloader targetId="printable-prediction-report" fileName={`MindScale-Prediction-${Date.now()}.pdf`} title="MindScale Prediction Report" />
             </div>
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-primary-600" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Well-being Risk:</strong> {result.probability}%
-              </span>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-primary-600" />
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>Profile:</strong> {result.segment}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-4 w-4 text-primary-600" />
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>Well-being Risk:</strong> {result.probability}%
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <ShoppingCart className="h-4 w-4 text-primary-600" />
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>Suggested Actions:</strong> {result.recommendations?.join(', ')}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <ShoppingCart className="h-4 w-4 text-primary-600" />
-              <span className="text-gray-700 dark:text-gray-300">
-                <strong>Suggested Actions:</strong> {result.recommendations?.join(', ')}
-              </span>
+            {result.suggestions && result.suggestions.length > 0 && (
+              <div className="mt-4 text-sm text-gray-700 dark:text-gray-300">
+                <div className="font-semibold mb-1">AI Suggestions</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  {result.suggestions.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Hidden, polished report layout for PDF export */}
+          <div id="printable-prediction-report" className="report-container mt-6" style={{ position: 'absolute', left: -99999, top: 0 }}>
+            {/* Watermark stamp sits at the back */}
+            <img src="/Stamp.png" alt="Stamp" className="report-stamp" />
+
+            {/* Foreground content */}
+            <div className="relative z-10">
+            <div className="report-header">
+              <div>
+                <div className="report-title">Well-being Check-in Report</div>
+                <div className="report-meta">Generated: {new Date().toLocaleString()}</div>
+              </div>
+              <img src="/Logo.png" alt="MindScale" className="h-10 w-auto" />
+            </div>
+
+            <div className="report-section">
+              <h5>Your Inputs</h5>
+              <div className="report-kv">
+                <div>Age: <span className="font-medium">{formData.age}</span></div>
+                <div>Avg Sleep (hours): <span className="font-medium">{formData.income}</span></div>
+                <div>Stress Level (1-10): <span className="font-medium">{formData.purchaseFrequency}</span></div>
+                <div>Physical Activity (mins/day): <span className="font-medium">{formData.avgOrderValue}</span></div>
+                <div>Primary Well-being Focus: <span className="font-medium">{formData.preferredCategory || '—'}</span></div>
+                <div>Days Feeling Low (this month): <span className="font-medium">{formData.lastPurchaseDays}</span></div>
+                <div className="md:col-span-2">Primary Issue: <span className="font-medium">{formData.issue || '—'}</span></div>
+              </div>
+            </div>
+
+            <div className="report-section">
+              <h5>Prediction Results</h5>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="text-gray-500">Profile</div>
+                  <div className="text-base font-semibold">{result.segment}</div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="text-gray-500">Well-being Risk</div>
+                  <div className="text-base font-semibold">{result.probability}%</div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="text-gray-500">Confidence</div>
+                  <div className="text-base font-semibold">{result.confidence ?? '—'}{typeof result.confidence === 'number' ? '%' : ''}</div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="text-gray-500">Next Check-in</div>
+                  <div className="text-base font-semibold">{computeNextCheckIn(result.probability)}</div>
+                </div>
+              </div>
+            </div>
+
+            {result.recommendations?.length > 0 && (
+              <div className="report-section">
+                <h5>Suggested Actions</h5>
+                <ol className="report-list space-y-1">
+                  {result.recommendations.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {result.suggestions?.length > 0 && (
+              <div className="report-section">
+                <h5>AI Suggestions</h5>
+                <ol className="report-list space-y-1">
+                  {result.suggestions.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
             </div>
           </div>
-          {/* Removed inline chart to avoid duplication with dashboard section */}
-          {result.suggestions && result.suggestions.length > 0 && (
-            <div className="mt-4 text-sm text-gray-700 dark:text-gray-300">
-              <div className="font-semibold mb-1">AI Suggestions</div>
-              <ul className="list-disc pl-5 space-y-1">
-                {result.suggestions.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        </>
       )}
     </div>
   )

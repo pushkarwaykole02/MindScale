@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { 
@@ -19,6 +19,14 @@ const Landing = () => {
   const [selectedYear, setSelectedYear] = useState(null)
   const [topCountries, setTopCountries] = useState(null)
   const [availableYears, setAvailableYears] = useState([])
+  const [statsVisible, setStatsVisible] = useState(false)
+  const statsRef = useRef(null)
+  const [animatedStats, setAnimatedStats] = useState([
+    { label: 'Years of Data', value: 0, target: 10, suffix: '+' },
+    { label: 'Customer Records', value: 0, target: 1, suffix: 'M+' },
+    { label: 'Data Points', value: 0, target: 50, suffix: 'M+' },
+    { label: 'Accuracy Rate', value: 0, target: 95, suffix: '%' }
+  ])
 
   useEffect(() => {
     const load = async () => {
@@ -33,6 +41,36 @@ const Landing = () => {
     }
     load()
   }, [])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !statsVisible) {
+          setStatsVisible(true)
+        }
+      },
+      { threshold: 0.3 }
+    )
+    if (statsRef.current) observer.observe(statsRef.current)
+    return () => observer.disconnect()
+  }, [statsVisible])
+
+  useEffect(() => {
+    if (!statsVisible) return
+    const duration = 1200
+    const steps = 50
+    const stepTime = duration / steps
+    let current = 0
+    const interval = setInterval(() => {
+      current++
+      setAnimatedStats(prev => prev.map(s => ({
+        ...s,
+        value: Math.min(s.target, Math.floor((s.target * current) / steps))
+      })))
+      if (current >= steps) clearInterval(interval)
+    }, stepTime)
+    return () => clearInterval(interval)
+  }, [statsVisible])
 
   const fetchTopCountriesForYear = async (year) => {
     try {
@@ -82,12 +120,6 @@ const Landing = () => {
     }
   ]
 
-  const stats = [
-    { label: 'Years of Data', value: '10+' },
-    { label: 'Customer Records', value: '1M+' },
-    { label: 'Data Points', value: '50M+' },
-    { label: 'Accuracy Rate', value: '95%' }
-  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -134,13 +166,13 @@ const Landing = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-white dark:bg-gray-800 py-16">
+      <div ref={statsRef} className="bg-white dark:bg-gray-800 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
+            {animatedStats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-primary-600 mb-2">
-                  {stat.value}
+                  {stat.value}{stat.suffix}
                 </div>
                 <div className="text-gray-600 dark:text-gray-300">
                   {stat.label}
